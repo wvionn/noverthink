@@ -61,9 +61,9 @@ const bottleVariants: Variants = {
 
 const rippleVariants: Variants = {
   releasing: {
-    opacity: [0, 0.45, 0.7, 0.6, 0.65, 0],
-    scale: [0.7, 1, 1.02, 0.98, 1, 0.72],
-    transition: { duration: releaseDurationSec, ease: easeInOut, times: [0, 0.4, 0.5, 0.55, 0.6, 1] }
+    opacity: [0, 0.6, 0.8, 0.7, 0.75, 0],
+    scale: [0.7, 1, 1.05, 1.02, 1.08, 0.75],
+    transition: { duration: releaseDurationSec, ease: easeInOut, times: [0, 0.3, 0.5, 0.6, 0.7, 1] }
   }
 };
 
@@ -1021,7 +1021,12 @@ export default function MessageInABottle() {
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
               <motion.div
-                className="absolute w-40 sm:w-48 md:w-60 h-40 sm:h-48 md:h-60 rounded-full border border-sky-200/30 shadow-[0_0_25px_rgba(56,189,248,0.25)]"
+                className="absolute w-40 sm:w-48 md:w-60 h-40 sm:h-48 md:h-60 rounded-full"
+                style={{
+                  border: '2px solid rgba(186, 230, 253, 0.4)',
+                  boxShadow: '0 0 30px rgba(56, 189, 248, 0.3), inset 0 0 30px rgba(56, 189, 248, 0.15)',
+                  background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 100%)'
+                }}
                 variants={rippleVariants}
                 initial={false}
                 animate="releasing"
