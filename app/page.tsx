@@ -59,14 +59,6 @@ const bottleVariants: Variants = {
   exit: { opacity: 0, transition: { duration: 0.3 } }
 };
 
-const rippleVariants: Variants = {
-  releasing: {
-    opacity: [0, 0.6, 0.8, 0.7, 0.75, 0],
-    scale: [0.7, 1, 1.05, 1.02, 1.08, 0.75],
-    transition: { duration: releaseDurationSec, ease: easeInOut, times: [0, 0.3, 0.5, 0.6, 0.7, 1] }
-  }
-};
-
 const textVariants: Variants = {
   messy: {
     color: 'rgba(148,163,184,0.7)',
@@ -1023,13 +1015,37 @@ export default function MessageInABottle() {
               <motion.div
                 className="absolute w-40 sm:w-48 md:w-60 h-40 sm:h-48 md:h-60 rounded-full"
                 style={{
-                  border: '2px solid rgba(186, 230, 253, 0.4)',
-                  boxShadow: '0 0 30px rgba(56, 189, 248, 0.3), inset 0 0 30px rgba(56, 189, 248, 0.15)',
-                  background: 'radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 100%)'
+                  border: '3px solid rgba(186, 230, 253, 0.6)',
+                  boxShadow: '0 0 50px rgba(56, 189, 248, 0.6), inset 0 0 50px rgba(56, 189, 248, 0.3)',
+                  background: 'radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.15) 50%, rgba(56, 189, 248, 0.05) 100%)'
                 }}
-                variants={rippleVariants}
-                initial={false}
-                animate="releasing"
+                animate={{
+                  opacity: [0, 0.8, 1, 0.9, 0.95, 0],
+                  scale: [0.7, 1, 1.05, 1.02, 1.08, 0.75]
+                }}
+                transition={{
+                  duration: releaseDurationSec,
+                  ease: easeInOut,
+                  times: [0, 0.3, 0.5, 0.6, 0.7, 1]
+                }}
+              />
+              <motion.div
+                className="absolute w-32 sm:w-40 md:w-48 h-32 sm:h-40 md:h-48 rounded-full"
+                style={{
+                  border: '2px solid rgba(186, 230, 253, 0.5)',
+                  boxShadow: '0 0 35px rgba(56, 189, 248, 0.5)',
+                  background: 'radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(14, 165, 233, 0.1) 70%, transparent 100%)'
+                }}
+                animate={{
+                  opacity: [0, 0.7, 0.9, 0.8, 0.85, 0],
+                  scale: [0.8, 1.05, 1.1, 1.08, 1.12, 0.8]
+                }}
+                transition={{
+                  duration: releaseDurationSec,
+                  ease: easeInOut,
+                  times: [0, 0.3, 0.5, 0.6, 0.7, 1],
+                  delay: 0.15
+                }}
               />
               <AnimatePresence mode="wait">
                 {breathPhase && (
