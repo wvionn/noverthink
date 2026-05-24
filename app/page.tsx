@@ -12,7 +12,6 @@ type TimeOfDay = 'day' | 'dusk' | 'night';
 type TimeOfDayPreview = TimeOfDay | 'auto';
 type Mode = 'release' | 'gratitude';
 type Star = { id: string; x: number; y: number; text: string; delay: number };
-type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 type MoonPhase = 'new' | 'waxing-crescent' | 'first-quarter' | 'waxing-gibbous' | 'full' | 'waning-gibbous' | 'last-quarter' | 'waning-crescent';
 type Meteor = { id: string; x: number; y: number; angle: number; delay: number; duration: number };
 
@@ -116,14 +115,6 @@ const emotionWheel = {
 };
 
 // --- Seasonal & Celestial Calculations ---
-
-const getSeason = (date: Date): Season => {
-  const month = date.getMonth();
-  if (month >= 2 && month <= 4) return 'spring';
-  if (month >= 5 && month <= 7) return 'summer';
-  if (month >= 8 && month <= 10) return 'autumn';
-  return 'winter';
-};
 
 const getMoonPhase = (date: Date): MoonPhase => {
   const year = date.getFullYear();
@@ -368,6 +359,72 @@ const StarIcon = ({ className = "w-5 h-5" }) => (
   </svg>
 );
 
+const MeteorSvg = ({ className = "w-32 h-32" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 200 200"
+    fill="none"
+    className={className}
+    aria-hidden="true"
+  >
+    <defs>
+      <linearGradient id="meteorGradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+        <stop offset="40%" stopColor="#e0f2fe" stopOpacity="0.9" />
+        <stop offset="70%" stopColor="#7dd3fc" stopOpacity="0.6" />
+        <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id="meteorCore" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="50%" stopColor="#fef3c7" />
+        <stop offset="100%" stopColor="#fbbf24" />
+      </linearGradient>
+      <radialGradient id="meteorGlow">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+        <stop offset="50%" stopColor="#bae6fd" stopOpacity="0.4" />
+        <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+      </radialGradient>
+    </defs>
+    
+    {/* Outer glow */}
+    <ellipse cx="40" cy="40" rx="25" ry="25" fill="url(#meteorGlow)" />
+    
+    {/* Tail (multiple layers for depth) */}
+    <path
+      d="M 40 40 Q 80 50, 140 70 Q 160 75, 190 85"
+      stroke="url(#meteorGradient)"
+      strokeWidth="18"
+      strokeLinecap="round"
+      fill="none"
+      opacity="0.6"
+    />
+    <path
+      d="M 40 40 Q 75 45, 130 65 Q 150 70, 180 78"
+      stroke="url(#meteorGradient)"
+      strokeWidth="12"
+      strokeLinecap="round"
+      fill="none"
+      opacity="0.8"
+    />
+    <path
+      d="M 40 40 Q 70 42, 120 58 Q 140 63, 170 70"
+      stroke="url(#meteorGradient)"
+      strokeWidth="8"
+      strokeLinecap="round"
+      fill="none"
+    />
+    
+    {/* Core/Head */}
+    <circle cx="40" cy="40" r="8" fill="url(#meteorCore)" />
+    <circle cx="40" cy="40" r="5" fill="#ffffff" opacity="0.9" />
+    
+    {/* Sparkles */}
+    <circle cx="80" cy="52" r="2" fill="#ffffff" opacity="0.8" />
+    <circle cx="110" cy="62" r="1.5" fill="#bae6fd" opacity="0.7" />
+    <circle cx="145" cy="73" r="1" fill="#7dd3fc" opacity="0.6" />
+  </svg>
+);
+
 // --- Main Page Component ---
 export default function MessageInABottle() {
   const [text, setText] = useState<string>('');
@@ -390,11 +447,16 @@ export default function MessageInABottle() {
   const [mode, setMode] = useState<Mode>('release');
   const [stars, setStars] = useState<Star[]>([]);
   const [gratitudeCount, setGratitudeCount] = useState<number>(0);
-  const [season, setSeason] = useState<Season>('summer');
   const [moonPhase, setMoonPhase] = useState<MoonPhase>('new');
   const [showMeteorShower, setShowMeteorShower] = useState<boolean>(false);
   const [showAurora, setShowAurora] = useState<boolean>(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
+  const [showEventsPanel, setShowEventsPanel] = useState<boolean>(false);
+  const [manualOverrides, setManualOverrides] = useState({
+    fullMoon: false,
+    meteorShower: false,
+    aurora: false
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const textRef = useRef<string>('');
   const saveHistoryRef = useRef<boolean>(false);
@@ -508,17 +570,26 @@ export default function MessageInABottle() {
   useEffect(() => {
     const updateSeasonalEffects = () => {
       const now = new Date();
-      setSeason(getSeason(now));
       const phase = getMoonPhase(now);
       setMoonPhase(phase);
-      setShowMeteorShower(shouldShowMeteorShower(now));
-      setShowAurora(shouldShowAurora(now, timeOfDay));
+      
+      if (manualOverrides.meteorShower) {
+        setShowMeteorShower(true);
+      } else {
+        setShowMeteorShower(shouldShowMeteorShower(now));
+      }
+      
+      if (manualOverrides.aurora) {
+        setShowAurora(true);
+      } else {
+        setShowAurora(shouldShowAurora(now, timeOfDay));
+      }
     };
 
     updateSeasonalEffects();
     const interval = setInterval(updateSeasonalEffects, 60 * 60 * 1000); // Check hourly
     return () => clearInterval(interval);
-  }, [timeOfDay]);
+  }, [timeOfDay, manualOverrides]);
 
   // Generate meteors for meteor shower
   useEffect(() => {
@@ -706,6 +777,21 @@ export default function MessageInABottle() {
     setMode(prev => prev === 'release' ? 'gratitude' : 'release');
   };
 
+  const toggleEvent = (event: 'fullMoon' | 'meteorShower' | 'aurora') => {
+    setManualOverrides(prev => ({
+      ...prev,
+      [event]: !prev[event]
+    }));
+  };
+
+  const resetOverrides = () => {
+    setManualOverrides({
+      fullMoon: false,
+      meteorShower: false,
+      aurora: false
+    });
+  };
+
   if (!isMounted) return null; // Prevent SSR hydration mismatch
 
   return (
@@ -773,6 +859,14 @@ export default function MessageInABottle() {
             aria-expanded={isHistoryOpen}
           >
             History
+          </button>
+
+          <button
+            onClick={() => setShowEventsPanel(prev => !prev)}
+            className="px-3 sm:px-4 py-2 rounded-full border border-white/15 bg-white/6 text-[10px] sm:text-xs md:text-sm tracking-wide text-white/75 hover:text-white transition-colors"
+            aria-expanded={showEventsPanel}
+          >
+            Events
           </button>
 
           <div className="relative">
@@ -1110,6 +1204,77 @@ export default function MessageInABottle() {
         )}
       </AnimatePresence>
 
+      {/* Events Control Panel */}
+      <AnimatePresence>
+        {showEventsPanel && (
+          <motion.div
+            key="events-panel"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: easeInOut }}
+            className="absolute right-4 sm:right-6 top-20 sm:top-24 w-[calc(100vw-2rem)] sm:w-[82vw] md:max-w-xs overflow-hidden rounded-xl sm:rounded-2xl border border-white/15 bg-[#0b1326]/95 backdrop-blur-xl shadow-2xl z-50"
+          >
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-white/10">
+              <span className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-white/70">Seasonal Events</span>
+              <button
+                onClick={() => setShowEventsPanel(false)}
+                className="text-[10px] sm:text-xs text-white/60 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-3">
+              <div className="space-y-2">
+                <p className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">Celestial</p>
+                <button
+                  onClick={() => toggleEvent('fullMoon')}
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                    manualOverrides.fullMoon
+                      ? 'bg-yellow-500/20 text-yellow-100 border border-yellow-300/30'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  🌕 Full Moon
+                </button>
+                <button
+                  onClick={() => toggleEvent('meteorShower')}
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                    manualOverrides.meteorShower
+                      ? 'bg-blue-500/20 text-blue-100 border border-blue-300/30'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  ☄️ Meteor Shower
+                </button>
+                <button
+                  onClick={() => toggleEvent('aurora')}
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                    manualOverrides.aurora
+                      ? 'bg-green-500/20 text-green-100 border border-green-300/30'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  🌌 Aurora Borealis
+                </button>
+              </div>
+
+
+              <button
+                onClick={resetOverrides}
+                className="w-full mt-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] sm:text-xs text-white/70 hover:text-white transition-colors"
+              >
+                Reset to Auto
+              </button>
+
+              <p className="text-[9px] sm:text-[10px] text-white/40 pt-2">
+                💡 Set time to NIGHT to see celestial events
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isHistoryOpen && (
           <motion.div
@@ -1176,7 +1341,7 @@ export default function MessageInABottle() {
       </AnimatePresence>
 
       {/* Full Moon */}
-      {isFullMoon(moonPhase) && effectiveTimeOfDay === 'night' && (
+      {(isFullMoon(moonPhase) || manualOverrides.fullMoon) && effectiveTimeOfDay === 'night' && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
@@ -1191,7 +1356,7 @@ export default function MessageInABottle() {
       )}
 
       {/* Aurora Borealis */}
-      {showAurora && effectiveTimeOfDay === 'night' && (
+      {(showAurora || manualOverrides.aurora) && effectiveTimeOfDay === 'night' && (
         <div className="absolute inset-0 pointer-events-none z-5 overflow-hidden">
           <motion.div
             animate={{
@@ -1221,25 +1386,25 @@ export default function MessageInABottle() {
       )}
 
       {/* Meteor Shower */}
-      {showMeteorShower && effectiveTimeOfDay === 'night' && meteors.map(meteor => (
+      {(showMeteorShower || manualOverrides.meteorShower) && effectiveTimeOfDay === 'night' && meteors.map(meteor => (
         <motion.div
           key={meteor.id}
           initial={{ opacity: 0, x: `${meteor.x}vw`, y: `${meteor.y}vh` }}
           animate={{
             opacity: [0, 1, 1, 0],
-            x: [`${meteor.x}vw`, `${meteor.x + 30}vw`],
-            y: [`${meteor.y}vh`, `${meteor.y + 30}vh`]
+            x: [`${meteor.x}vw`, `${meteor.x + 35}vw`],
+            y: [`${meteor.y}vh`, `${meteor.y + 35}vh`]
           }}
           transition={{
             duration: meteor.duration,
             delay: meteor.delay,
             ease: "easeIn",
-            times: [0, 0.1, 0.8, 1]
+            times: [0, 0.1, 0.7, 1]
           }}
           className="absolute pointer-events-none z-5"
           style={{ rotate: `${meteor.angle}deg` }}
         >
-          <div className="w-1 h-12 bg-gradient-to-b from-white via-blue-200 to-transparent shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+          <MeteorSvg className="w-24 h-24 sm:w-32 sm:h-32" />
         </motion.div>
       ))}
 
@@ -1310,50 +1475,22 @@ export default function MessageInABottle() {
       {/* Ambient Ocean Waves (Bottom) with Seasonal Variations */}
       <div className="absolute bottom-0 left-0 w-full h-[30vh] pointer-events-none z-10 overflow-hidden text-blue-300/15">
 
-        {/* Seasonal Ice Floes (Winter) */}
-        {season === 'winter' && (
-          <div className="absolute inset-0 z-30">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <motion.div
-                key={`ice-${i}`}
-                animate={{
-                  x: ['-10%', '110%'],
-                }}
-                transition={{
-                  duration: 40 + i * 10,
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: i * 8
-                }}
-                className="absolute bottom-[10%] w-16 h-8 sm:w-24 sm:h-12 rounded-full bg-gradient-to-br from-blue-100/40 to-white/30 backdrop-blur-sm border border-white/20"
-                style={{ left: `${i * 20}%` }}
-              />
-            ))}
-          </div>
-        )}
-
         {/* Back Wave (Slow) */}
-        <div className={`wave-layer wave-slow mix-blend-screen ${
-          season === 'summer' ? 'text-teal-700/35' : 'text-[#0a192f]/45'
-        }`}>
+        <div className="wave-layer wave-slow text-[#0a192f]/45 mix-blend-screen">
           <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
             <path d="M0,60 C300,120 300,0 600,60 C900,120 900,0 1200,60 C1500,120 1500,0 1800,60 C2100,120 2100,0 2400,60 L2400,120 L0,120 Z" />
           </svg>
         </div>
 
         {/* Middle Wave (Medium, Reverse) */}
-        <div className={`wave-layer wave-mid mix-blend-screen ${
-          season === 'summer' ? 'text-cyan-800/30' : 'text-indigo-900/25'
-        }`}>
+        <div className="wave-layer wave-mid text-indigo-900/25 mix-blend-screen">
           <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
             <path d="M0,80 C300,20 300,140 600,80 C900,20 900,140 1200,80 C1500,20 1500,140 1800,80 C2100,20 2100,140 2400,80 L2400,120 L0,120 Z" />
           </svg>
         </div>
 
         {/* Front Wave (Fast) */}
-        <div className={`wave-layer wave-fast mix-blend-screen ${
-          season === 'summer' ? 'text-blue-600/25' : 'text-blue-800/20'
-        }`}>
+        <div className="wave-layer wave-fast text-blue-800/20 mix-blend-screen">
           <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
             <path d="M0,100 C300,40 300,160 600,100 C900,40 900,160 1200,100 C1500,40 1500,160 1800,100 C2100,40 2100,160 2400,100 L2400,120 L0,120 Z" />
           </svg>
