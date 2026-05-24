@@ -8,6 +8,8 @@ import { motion, AnimatePresence, Variants, easeInOut, easeOut } from 'framer-mo
 type AnimationStage = 'typing' | 'crystallizing' | 'morphing' | 'releasing' | 'complete' | 'affirmation';
 type BreathPhase = 'in' | 'hold' | 'out';
 type ReleaseEntry = { id: string; text: string; createdAt: string };
+type TimeOfDay = 'day' | 'dusk' | 'night';
+type TimeOfDayPreview = TimeOfDay | 'auto';
 
 // --- Framer Motion Variants ---
 const cardVariants: Variants = {
@@ -105,6 +107,66 @@ const uiFont = Manrope({
   weight: ['300', '400', '500', '600'],
   display: 'swap'
 });
+
+const timeOfDayBackgrounds: Record<TimeOfDay, string> = {
+  day: 'bg-gradient-to-b from-[#7d98b1] via-[#5f7a97] to-[#314d66] text-white/90',
+  dusk: 'bg-gradient-to-b from-[#1b1433] via-[#5a2436] to-[#f08a4b] text-white',
+  night: 'bg-gradient-to-b from-[#0b1631] via-[#0a1329] to-[#050812] text-white/90'
+};
+
+const getDayOfYear = (date: Date) => {
+  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
+  const diff = date.getTime() - start.getTime();
+  return Math.floor(diff / 86400000);
+};
+
+const degToRad = (deg: number) => (deg * Math.PI) / 180;
+const radToDeg = (rad: number) => (rad * 180) / Math.PI;
+
+const normalizeDegrees = (deg: number) => {
+  return (deg % 360 + 360) % 360;
+};
+
+const calcSunTime = (date: Date, lat: number, lon: number, isSunrise: boolean) => {
+  const day = getDayOfYear(date);
+  const lngHour = lon / 15;
+  const t = day + ((isSunrise ? 6 : 18) - lngHour) / 24;
+  const M = (0.9856 * t) - 3.289;
+  const L = normalizeDegrees(
+    M + (1.916 * Math.sin(degToRad(M))) + (0.020 * Math.sin(degToRad(2 * M))) + 282.634
+  );
+
+  let RA = radToDeg(Math.atan(0.91764 * Math.tan(degToRad(L))));
+  RA = normalizeDegrees(RA);
+  const Lquadrant = Math.floor(L / 90) * 90;
+  const RAquadrant = Math.floor(RA / 90) * 90;
+  RA = (RA + (Lquadrant - RAquadrant)) / 15;
+
+  const sinDec = 0.39782 * Math.sin(degToRad(L));
+  const cosDec = Math.cos(Math.asin(sinDec));
+  const cosH = (Math.cos(degToRad(90.833)) - (sinDec * Math.sin(degToRad(lat))))
+    / (cosDec * Math.cos(degToRad(lat)));
+
+  if (cosH > 1 || cosH < -1) return null;
+
+  let H = isSunrise ? 360 - radToDeg(Math.acos(cosH)) : radToDeg(Math.acos(cosH));
+  H = H / 15;
+  let UT = H + RA - (0.06571 * t) - 6.622;
+  UT = (UT - lngHour + 24) % 24;
+
+  const hours = Math.floor(UT);
+  const minutes = Math.floor((UT - hours) * 60);
+  const seconds = Math.round((((UT - hours) * 60) - minutes) * 60);
+
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hours, minutes, seconds));
+};
+
+const getSunTimes = (date: Date, lat: number, lon: number) => {
+  const sunrise = calcSunTime(date, lat, lon, true);
+  const sunset = calcSunTime(date, lat, lon, false);
+  if (!sunrise || !sunset) return null;
+  return { sunrise, sunset };
+};
 
 // --- Raw SVG Icons (Zero Dependencies) ---
 
@@ -216,9 +278,12 @@ export default function MessageInABottle() {
   const [saveHistory, setSaveHistory] = useState<boolean>(false);
   const [history, setHistory] = useState<ReleaseEntry[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('night');
+  const [timeOfDayPreview, setTimeOfDayPreview] = useState<TimeOfDayPreview>('auto');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const textRef = useRef<string>('');
   const saveHistoryRef = useRef<boolean>(false);
+  const effectiveTimeOfDay = timeOfDayPreview === 'auto' ? timeOfDay : timeOfDayPreview;
 
   // Hydration & initial setup
   useEffect(() => {
@@ -270,6 +335,45 @@ export default function MessageInABottle() {
         audioRef.current = null;
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const rawLat = process.env.NEXT_PUBLIC_LAT;
+    const rawLon = process.env.NEXT_PUBLIC_LON;
+    const lat = rawLat ? parseFloat(rawLat) : NaN;
+    const lon = rawLon ? parseFloat(rawLon) : NaN;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+
+    const computeTimeOfDay = () => {
+      const now = new Date();
+      if (!hasCoords) {
+        const hour = now.getHours();
+        if (hour >= 6 && hour < 17) return setTimeOfDay('day');
+        if (hour >= 5 && hour < 6) return setTimeOfDay('dusk');
+        if (hour >= 17 && hour < 19) return setTimeOfDay('dusk');
+        return setTimeOfDay('night');
+      }
+
+      const sun = getSunTimes(now, lat, lon);
+      if (!sun) {
+        return setTimeOfDay('night');
+      }
+
+      const nowMs = now.getTime();
+      const sunriseMs = sun.sunrise.getTime();
+      const sunsetMs = sun.sunset.getTime();
+      const dawnStart = sunriseMs - 60 * 60 * 1000;
+      const duskEnd = sunsetMs + 60 * 60 * 1000;
+
+      if (nowMs >= sunriseMs && nowMs <= sunsetMs) return setTimeOfDay('day');
+      if (nowMs >= dawnStart && nowMs < sunriseMs) return setTimeOfDay('dusk');
+      if (nowMs > sunsetMs && nowMs <= duskEnd) return setTimeOfDay('dusk');
+      return setTimeOfDay('night');
+    };
+
+    computeTimeOfDay();
+    const interval = setInterval(computeTimeOfDay, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -387,7 +491,7 @@ export default function MessageInABottle() {
   if (!isMounted) return null; // Prevent SSR hydration mismatch
 
   return (
-    <div className={`${uiFont.className} relative w-screen h-screen overflow-hidden bg-gradient-to-b from-[#0b1631] via-[#0a1329] to-[#050812] text-white/90 selection:bg-white/20`}>
+    <div className={`${uiFont.className} relative w-screen h-screen overflow-hidden ${timeOfDayBackgrounds[effectiveTimeOfDay]} selection:bg-white/20`}>
 
       {/* Global CSS for Wave Animations */}
       <style dangerouslySetInnerHTML={{
@@ -410,6 +514,22 @@ export default function MessageInABottle() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/6 px-1 py-1 text-[10px] sm:text-xs tracking-wide text-white/75">
+            {(['auto', 'day', 'dusk', 'night'] as TimeOfDayPreview[]).map(option => (
+              <button
+                key={option}
+                onClick={() => setTimeOfDayPreview(option)}
+                className={`px-2 py-1 rounded-full transition-colors ${timeOfDayPreview === option
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/70 hover:text-white'
+                }`}
+                aria-pressed={timeOfDayPreview === option}
+              >
+                {option.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={() => setIsHistoryOpen(prev => !prev)}
             className="px-4 py-2 rounded-full border border-white/15 bg-white/6 text-xs sm:text-sm tracking-wide text-white/75 hover:text-white transition-colors"
