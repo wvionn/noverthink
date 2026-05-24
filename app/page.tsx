@@ -509,13 +509,10 @@ export default function MessageInABottle() {
       localStorage.setItem('soundHintShown', 'true');
     }
 
-    // Setup ambient ocean sound
-    audioRef.current = new Audio('https://actions.google.com/sounds/v1/water/ocean_waves_crashing.ogg');
+    // Setup ambient audio
+    audioRef.current = new Audio('/leberch-meditation-ambient-375361.mp3');
     audioRef.current.loop = true;
     audioRef.current.volume = 0.3;
-    if (savedSound === 'true') {
-      audioRef.current.play().catch(() => setIsPlaying(false));
-    }
 
     let hintTimeout: NodeJS.Timeout | undefined;
     if (!hintShown) {
@@ -765,6 +762,13 @@ export default function MessageInABottle() {
   const confirmRelease = () => {
     setShowPreReleasePrompt(false);
     setStage('crystallizing');
+    
+    // Auto-play audio when releasing a message
+    if (audioRef.current && !isPlaying) {
+      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      setIsPlaying(true);
+      localStorage.setItem('soundEnabled', 'true');
+    }
   };
 
   const getRandomPrompt = () => {
