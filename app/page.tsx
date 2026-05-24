@@ -510,9 +510,13 @@ export default function MessageInABottle() {
     }
 
     // Setup ambient audio
-    audioRef.current = new Audio('/leberch-meditation-ambient-375361.mp3');
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.3;
+    const audio = new Audio('/leberch-meditation-ambient-375361.mp3');
+    audio.loop = true;
+    audio.volume = 0.5;
+    audio.preload = 'auto';
+    audioRef.current = audio;
+    
+    console.log('Audio initialized:', audio.src);
 
     let hintTimeout: NodeJS.Timeout | undefined;
     if (!hintShown) {
@@ -720,15 +724,29 @@ export default function MessageInABottle() {
   }, [stage]);
 
   const toggleAudio = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.error('Audio ref is null');
+      return;
+    }
+    
     const next = !isPlaying;
     if (next) {
-      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          localStorage.setItem('soundEnabled', 'true');
+          console.log('Audio playing');
+        })
+        .catch(e => {
+          console.error("Audio play failed:", e);
+          setIsPlaying(false);
+        });
     } else {
       audioRef.current.pause();
+      setIsPlaying(false);
+      localStorage.setItem('soundEnabled', 'false');
+      console.log('Audio paused');
     }
-    setIsPlaying(next);
-    localStorage.setItem('soundEnabled', next ? 'true' : 'false');
     setShowSoundHint(false);
   };
 
@@ -764,10 +782,21 @@ export default function MessageInABottle() {
     setStage('crystallizing');
     
     // Auto-play audio when releasing a message
-    if (audioRef.current && !isPlaying) {
-      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-      setIsPlaying(true);
-      localStorage.setItem('soundEnabled', 'true');
+    if (audioRef.current) {
+      if (!isPlaying) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            localStorage.setItem('soundEnabled', 'true');
+            console.log('Audio started playing');
+          })
+          .catch(e => {
+            console.error("Audio play failed:", e);
+            // If autoplay fails, user can manually click the button
+          });
+      }
+    } else {
+      console.error('Audio ref is null');
     }
   };
 
