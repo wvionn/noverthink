@@ -172,10 +172,14 @@ const shouldShowMeteorShower = (date: Date): boolean => {
 };
 
 const shouldShowAurora = (date: Date, timeOfDay: TimeOfDay): boolean => {
-  if (timeOfDay !== 'night') return false;
-  const month = date.getMonth();
-  // More likely during equinoxes (March, September) and winter months
-  return month === 2 || month === 8 || month === 0 || month === 1 || month === 11;
+  // Disabled by default - can be enabled manually via Events panel
+  return false;
+  
+  // Original logic (commented out):
+  // if (timeOfDay !== 'night') return false;
+  // const month = date.getMonth();
+  // // More likely during equinoxes (March, September) and winter months
+  // return month === 2 || month === 8 || month === 0 || month === 1 || month === 11;
 };
 
 const breathCopy: Record<BreathPhase, string> = {
