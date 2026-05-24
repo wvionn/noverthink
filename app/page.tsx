@@ -1340,48 +1340,167 @@ export default function MessageInABottle() {
         )}
       </AnimatePresence>
 
-      {/* Full Moon */}
+      {/* Full Moon - Realistic */}
       {(isFullMoon(moonPhase) || manualOverrides.fullMoon) && effectiveTimeOfDay === 'night' && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.9 }}
-          className="absolute top-[8%] right-[15%] w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-radial from-yellow-50 via-yellow-100/80 to-transparent shadow-[0_0_60px_rgba(255,252,240,0.6)] pointer-events-none z-5"
-        >
+        <div className="absolute top-[8%] right-[15%] w-24 h-24 sm:w-32 sm:h-32 pointer-events-none z-5">
+          {/* Outer glow layers */}
           <motion.div
-            animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="w-full h-full rounded-full bg-yellow-50/40 shadow-[0_0_80px_rgba(255,252,240,0.4)]"
+            animate={{ 
+              scale: [1, 1.15, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(255,252,240,0.4) 0%, rgba(255,252,240,0.2) 40%, transparent 70%)',
+              filter: 'blur(20px)'
+            }}
           />
-        </motion.div>
+          <motion.div
+            animate={{ 
+              scale: [1, 1.08, 1],
+              opacity: [0.4, 0.6, 0.4]
+            }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(255,250,230,0.5) 0%, rgba(255,245,210,0.3) 50%, transparent 80%)',
+              filter: 'blur(15px)'
+            }}
+          />
+          
+          {/* Moon surface with craters */}
+          <div className="absolute inset-0 rounded-full overflow-hidden" style={{
+            background: 'radial-gradient(circle at 35% 35%, #fffef7 0%, #fef9e7 30%, #f5f0d8 60%, #e8dfc0 100%)',
+            boxShadow: 'inset -8px -8px 20px rgba(0,0,0,0.15), 0 0 40px rgba(255,252,240,0.6), 0 0 80px rgba(255,252,240,0.3)'
+          }}>
+            {/* Crater details */}
+            <div className="absolute top-[25%] left-[30%] w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gray-300/30" />
+            <div className="absolute top-[45%] left-[55%] w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-gray-300/25" />
+            <div className="absolute top-[60%] left-[35%] w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-gray-300/20" />
+            <div className="absolute top-[35%] left-[65%] w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-gray-300/30" />
+            <div className="absolute top-[70%] left-[60%] w-2 h-2 rounded-full bg-gray-300/20" />
+            
+            {/* Surface texture overlay */}
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 30%, transparent 0%, rgba(0,0,0,0.1) 100%)'
+            }} />
+          </div>
+          
+          {/* Atmospheric glow */}
+          <motion.div
+            animate={{ 
+              opacity: [0.6, 0.8, 0.6]
+            }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, transparent 45%, rgba(255,252,240,0.15) 60%, transparent 75%)',
+              filter: 'blur(2px)'
+            }}
+          />
+        </div>
       )}
 
-      {/* Aurora Borealis */}
+      {/* Aurora Borealis - Realistic */}
       {(showAurora || manualOverrides.aurora) && effectiveTimeOfDay === 'night' && (
         <div className="absolute inset-0 pointer-events-none z-5 overflow-hidden">
+          {/* Green curtain layer (primary) */}
           <motion.div
             animate={{
-              opacity: [0.3, 0.6, 0.4, 0.7, 0.3],
-              x: ['-10%', '10%', '-5%', '15%', '-10%']
+              opacity: [0.4, 0.7, 0.5, 0.8, 0.4],
+              x: ['-5%', '8%', '-3%', '10%', '-5%'],
+              scaleY: [1, 1.1, 0.95, 1.08, 1]
             }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-0 left-0 w-full h-[45vh]"
+            style={{
+              background: 'linear-gradient(180deg, transparent 0%, rgba(34,197,94,0.25) 15%, rgba(34,197,94,0.35) 25%, rgba(16,185,129,0.3) 40%, rgba(5,150,105,0.2) 60%, transparent 80%)',
+              filter: 'blur(30px)',
+              mixBlendMode: 'screen'
+            }}
+          />
+          
+          {/* Pink/purple accent layer */}
+          <motion.div
+            animate={{
+              opacity: [0.3, 0.6, 0.4, 0.65, 0.3],
+              x: ['8%', '-10%', '5%', '-8%', '8%'],
+              scaleY: [1, 0.95, 1.05, 0.98, 1]
+            }}
+            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
             className="absolute top-0 left-0 w-full h-[40vh]"
             style={{
-              background: 'linear-gradient(180deg, rgba(34,197,94,0.15) 0%, rgba(59,130,246,0.12) 40%, rgba(168,85,247,0.1) 70%, transparent 100%)',
-              filter: 'blur(40px)'
+              background: 'linear-gradient(180deg, transparent 0%, rgba(236,72,153,0.15) 20%, rgba(168,85,247,0.2) 35%, rgba(147,51,234,0.15) 50%, transparent 75%)',
+              filter: 'blur(35px)',
+              mixBlendMode: 'screen'
             }}
           />
+          
+          {/* Blue-green secondary layer */}
           <motion.div
             animate={{
-              opacity: [0.4, 0.7, 0.3, 0.6, 0.4],
-              x: ['15%', '-15%', '10%', '-10%', '15%']
+              opacity: [0.35, 0.55, 0.45, 0.6, 0.35],
+              x: ['10%', '-12%', '8%', '-10%', '10%'],
+              scaleY: [1, 1.08, 0.97, 1.05, 1]
             }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 left-0 w-full h-[35vh]"
+            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-0 left-0 w-full h-[38vh]"
             style={{
-              background: 'linear-gradient(180deg, rgba(167,243,208,0.18) 0%, rgba(96,165,250,0.15) 50%, transparent 100%)',
-              filter: 'blur(50px)'
+              background: 'linear-gradient(180deg, transparent 5%, rgba(59,130,246,0.2) 18%, rgba(34,211,238,0.25) 32%, rgba(20,184,166,0.2) 48%, transparent 70%)',
+              filter: 'blur(28px)',
+              mixBlendMode: 'screen'
             }}
           />
+          
+          {/* Vertical rays/curtains effect */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <motion.div
+              key={`aurora-ray-${i}`}
+              animate={{
+                opacity: [0.2, 0.5, 0.3, 0.6, 0.2],
+                scaleY: [1, 1.2, 0.9, 1.15, 1],
+                x: [0, -10, 5, -8, 0]
+              }}
+              transition={{
+                duration: 12 + i * 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.8
+              }}
+              className="absolute top-0 h-[35vh]"
+              style={{
+                left: `${10 + i * 11}%`,
+                width: '8%',
+                background: 'linear-gradient(180deg, transparent 0%, rgba(34,197,94,0.3) 20%, rgba(16,185,129,0.25) 40%, transparent 70%)',
+                filter: 'blur(20px)',
+                mixBlendMode: 'screen'
+              }}
+            />
+          ))}
+          
+          {/* Subtle stars twinkling through aurora */}
+          {Array.from({ length: 15 }).map((_, i) => (
+            <motion.div
+              key={`aurora-star-${i}`}
+              animate={{
+                opacity: [0.3, 0.8, 0.4, 0.9, 0.3],
+                scale: [1, 1.3, 1, 1.4, 1]
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: Math.random() * 3
+              }}
+              className="absolute w-1 h-1 rounded-full bg-white"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 30}%`,
+                boxShadow: '0 0 3px rgba(255,255,255,0.8)'
+              }}
+            />
+          ))}
         </div>
       )}
 
