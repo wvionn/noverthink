@@ -171,16 +171,7 @@ const shouldShowMeteorShower = (date: Date): boolean => {
   return false;
 };
 
-const shouldShowAurora = (date: Date, timeOfDay: TimeOfDay): boolean => {
-  // Disabled by default - can be enabled manually via Events panel
-  return false;
-  
-  // Original logic (commented out):
-  // if (timeOfDay !== 'night') return false;
-  // const month = date.getMonth();
-  // // More likely during equinoxes (March, September) and winter months
-  // return month === 2 || month === 8 || month === 0 || month === 1 || month === 11;
-};
+
 
 const breathCopy: Record<BreathPhase, string> = {
   in: 'Breathe in…',
@@ -453,13 +444,11 @@ export default function MessageInABottle() {
   const [gratitudeCount, setGratitudeCount] = useState<number>(0);
   const [moonPhase, setMoonPhase] = useState<MoonPhase>('new');
   const [showMeteorShower, setShowMeteorShower] = useState<boolean>(false);
-  const [showAurora, setShowAurora] = useState<boolean>(false);
   const [meteors, setMeteors] = useState<Meteor[]>([]);
   const [showEventsPanel, setShowEventsPanel] = useState<boolean>(false);
   const [manualOverrides, setManualOverrides] = useState({
     fullMoon: false,
-    meteorShower: false,
-    aurora: false
+    meteorShower: false
   });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const textRef = useRef<string>('');
@@ -597,11 +586,6 @@ export default function MessageInABottle() {
         setShowMeteorShower(shouldShowMeteorShower(now));
       }
       
-      if (manualOverrides.aurora) {
-        setShowAurora(true);
-      } else {
-        setShowAurora(shouldShowAurora(now, timeOfDay));
-      }
     };
 
     updateSeasonalEffects();
@@ -827,7 +811,7 @@ export default function MessageInABottle() {
     setMode(prev => prev === 'release' ? 'gratitude' : 'release');
   };
 
-  const toggleEvent = (event: 'fullMoon' | 'meteorShower' | 'aurora') => {
+  const toggleEvent = (event: 'fullMoon' | 'meteorShower') => {
     setManualOverrides(prev => ({
       ...prev,
       [event]: !prev[event]
@@ -837,8 +821,7 @@ export default function MessageInABottle() {
   const resetOverrides = () => {
     setManualOverrides({
       fullMoon: false,
-      meteorShower: false,
-      aurora: false
+      meteorShower: false
     });
   };
 
@@ -1367,16 +1350,7 @@ export default function MessageInABottle() {
                 >
                   ☄️ Meteor Shower
                 </button>
-                <button
-                  onClick={() => toggleEvent('aurora')}
-                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] ${
-                    manualOverrides.aurora
-                      ? 'bg-green-500/20 text-green-100 border border-green-300/30 focus-visible:ring-green-400'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 focus-visible:ring-white/40'
-                  }`}
-                >
-                  🌌 Aurora Borealis
-                </button>
+
               </div>
 
 
@@ -1525,107 +1499,7 @@ export default function MessageInABottle() {
         </div>
       )}
 
-      {/* Aurora Borealis - Realistic */}
-      {(showAurora || manualOverrides.aurora) && effectiveTimeOfDay === 'night' && (
-        <div className="absolute inset-0 pointer-events-none z-5 overflow-hidden">
-          {/* Green curtain layer (primary) */}
-          <motion.div
-            animate={{
-              opacity: [0.4, 0.7, 0.5, 0.8, 0.4],
-              x: ['-5%', '8%', '-3%', '10%', '-5%'],
-              scaleY: [1, 1.1, 0.95, 1.08, 1]
-            }}
-            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 left-0 w-full h-[45vh]"
-            style={{
-              background: 'linear-gradient(180deg, transparent 0%, rgba(34,197,94,0.25) 15%, rgba(34,197,94,0.35) 25%, rgba(16,185,129,0.3) 40%, rgba(5,150,105,0.2) 60%, transparent 80%)',
-              filter: 'blur(30px)',
-              mixBlendMode: 'screen'
-            }}
-          />
-          
-          {/* Pink/purple accent layer */}
-          <motion.div
-            animate={{
-              opacity: [0.3, 0.6, 0.4, 0.65, 0.3],
-              x: ['8%', '-10%', '5%', '-8%', '8%'],
-              scaleY: [1, 0.95, 1.05, 0.98, 1]
-            }}
-            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 left-0 w-full h-[40vh]"
-            style={{
-              background: 'linear-gradient(180deg, transparent 0%, rgba(236,72,153,0.15) 20%, rgba(168,85,247,0.2) 35%, rgba(147,51,234,0.15) 50%, transparent 75%)',
-              filter: 'blur(35px)',
-              mixBlendMode: 'screen'
-            }}
-          />
-          
-          {/* Blue-green secondary layer */}
-          <motion.div
-            animate={{
-              opacity: [0.35, 0.55, 0.45, 0.6, 0.35],
-              x: ['10%', '-12%', '8%', '-10%', '10%'],
-              scaleY: [1, 1.08, 0.97, 1.05, 1]
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 left-0 w-full h-[38vh]"
-            style={{
-              background: 'linear-gradient(180deg, transparent 5%, rgba(59,130,246,0.2) 18%, rgba(34,211,238,0.25) 32%, rgba(20,184,166,0.2) 48%, transparent 70%)',
-              filter: 'blur(28px)',
-              mixBlendMode: 'screen'
-            }}
-          />
-          
-          {/* Vertical rays/curtains effect */}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <motion.div
-              key={`aurora-ray-${i}`}
-              animate={{
-                opacity: [0.2, 0.5, 0.3, 0.6, 0.2],
-                scaleY: [1, 1.2, 0.9, 1.15, 1],
-                x: [0, -10, 5, -8, 0]
-              }}
-              transition={{
-                duration: 12 + i * 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.8
-              }}
-              className="absolute top-0 h-[35vh]"
-              style={{
-                left: `${10 + i * 11}%`,
-                width: '8%',
-                background: 'linear-gradient(180deg, transparent 0%, rgba(34,197,94,0.3) 20%, rgba(16,185,129,0.25) 40%, transparent 70%)',
-                filter: 'blur(20px)',
-                mixBlendMode: 'screen'
-              }}
-            />
-          ))}
-          
-          {/* Subtle stars twinkling through aurora */}
-          {Array.from({ length: 15 }).map((_, i) => (
-            <motion.div
-              key={`aurora-star-${i}`}
-              animate={{
-                opacity: [0.3, 0.8, 0.4, 0.9, 0.3],
-                scale: [1, 1.3, 1, 1.4, 1]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: Math.random() * 3
-              }}
-              className="absolute w-1 h-1 rounded-full bg-white"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 30}%`,
-                boxShadow: '0 0 3px rgba(255,255,255,0.8)'
-              }}
-            />
-          ))}
-        </div>
-      )}
+
 
       {/* Meteor Shower */}
       {(showMeteorShower || manualOverrides.meteorShower) && effectiveTimeOfDay === 'night' && meteors.map(meteor => (
