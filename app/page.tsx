@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Cormorant_Garamond, Manrope } from 'next/font/google';
-import { motion, AnimatePresence, Variants, easeInOut, easeOut } from 'framer-motion';
+import { motion, AnimatePresence, Variants, easeInOut, easeOut, useReducedMotion } from 'framer-motion';
 
 // --- Types ---
 type AnimationStage = 'typing' | 'crystallizing' | 'morphing' | 'releasing' | 'complete' | 'affirmation';
@@ -17,20 +17,25 @@ type Meteor = { id: string; x: number; y: number; angle: number; delay: number; 
 
 // --- Framer Motion Variants ---
 const cardVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.95, y: 30, filter: 'blur(10px)' },
+  hidden: (custom) => ({
+    opacity: 0,
+    scale: custom ? 1 : 0.95,
+    y: custom ? 0 : 30,
+    filter: custom ? 'none' : 'blur(10px)'
+  }),
   typing: {
     opacity: 1,
     scale: 1,
     y: 0,
-    filter: 'blur(0px)',
+    filter: 'none',
     transition: { type: 'spring', damping: 25, stiffness: 80, mass: 1 }
   },
-  exit: {
+  exit: (custom) => ({
     opacity: 0,
-    scale: 0.8,
-    filter: 'blur(10px)',
-    transition: { duration: 1, ease: easeInOut }
-  }
+    scale: custom ? 1 : 0.8,
+    filter: custom ? 'none' : 'blur(10px)',
+    transition: { duration: custom ? 0.25 : 1, ease: easeInOut }
+  })
 };
 
 const releaseDurationMs = 10000;
@@ -40,35 +45,38 @@ const breathOutMs = Math.max(1000, releaseDurationMs - breathInMs - breathHoldMs
 const releaseDurationSec = releaseDurationMs / 1000;
 
 const bottleVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.5, y: '0vh', filter: 'blur(10px)' },
+  hidden: (custom) => ({
+    opacity: 0,
+    scale: custom ? 1 : 0.5,
+    y: '0vh',
+    filter: custom ? 'none' : 'blur(10px)'
+  }),
   morphing: {
     opacity: 1,
     scale: 1,
     y: '0vh',
-    filter: 'blur(0px)',
+    filter: 'none',
     transition: { duration: 1, ease: easeOut }
   },
-  releasing: {
+  releasing: (custom) => ({
     opacity: [1, 0.9, 0.6, 0.2, 0],
-    scale: [1, 0.9, 0.75, 0.6, 0.45],
-    x: [0, -6, 6, -4, 0],
-    y: ['0vh', '12vh', '28vh', '42vh', '55vh'],
-    filter: ['blur(0px)', 'blur(0.5px)', 'blur(1px)', 'blur(1.5px)', 'blur(2px)'],
+    scale: custom ? [1, 0.9, 0.8, 0.7, 0.6] : [1, 0.9, 0.75, 0.6, 0.45],
+    x: custom ? 0 : [0, -6, 6, -4, 0],
+    y: custom ? ['0vh', '12vh', '28vh', '42vh', '55vh'] : ['0vh', '12vh', '28vh', '42vh', '55vh'],
+    filter: 'none',
     transition: { duration: releaseDurationSec, ease: easeInOut, times: [0, 0.25, 0.55, 0.8, 1] }
-  },
+  }),
   exit: { opacity: 0, transition: { duration: 0.3 } }
 };
 
 const textVariants: Variants = {
   messy: {
-    color: 'rgba(148,163,184,0.7)',
-    letterSpacing: '0.02em',
+    color: 'rgba(248, 250, 252, 0.9)',
     textShadow: '0 0 0px rgba(255,255,255,0)',
     filter: 'blur(0.4px)'
   },
   tidy: {
     color: 'rgba(255,255,255,0.98)',
-    letterSpacing: '0.005em',
     textShadow: '0 0 8px rgba(255,255,255,0.8)',
     filter: 'blur(0px)'
   }
@@ -175,9 +183,9 @@ const shouldShowAurora = (date: Date, timeOfDay: TimeOfDay): boolean => {
 };
 
 const breathCopy: Record<BreathPhase, string> = {
-  in: 'Breathe in...',
-  hold: 'Hold...',
-  out: 'Breathe out, let it go...'
+  in: 'Breathe in…',
+  hold: 'Hold…',
+  out: 'Breathe out, let it go…'
 };
 
 const breathFont = Cormorant_Garamond({
@@ -331,26 +339,26 @@ const RealisticBottleSvg = ({ className = "w-12 h-12" }) => (
 );
 
 const PlayIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
     <path d="M8 5.14v14.72a1 1 0 001.5.86l11-7.36a1 1 0 000-1.72l-11-7.36a1 1 0 00-1.5.86z" />
   </svg>
 );
 
 const PauseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
     <path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z" />
   </svg>
 );
 
 const SendIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 ml-2">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 ml-2" aria-hidden="true">
     <line x1="22" y1="2" x2="11" y2="13" />
     <polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 );
 
 const StarIcon = ({ className = "w-5 h-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
   </svg>
 );
@@ -457,6 +465,19 @@ export default function MessageInABottle() {
   const textRef = useRef<string>('');
   const saveHistoryRef = useRef<boolean>(false);
   const effectiveTimeOfDay = timeOfDayPreview === 'auto' ? timeOfDay : timeOfDayPreview;
+  const shouldReduceMotion = useReducedMotion();
+
+  // Warning safeguard for unsaved journal draft entries
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (text.trim().length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [text]);
 
   // Hydration & initial setup
   useEffect(() => {
@@ -821,10 +842,8 @@ export default function MessageInABottle() {
     });
   };
 
-  if (!isMounted) return null; // Prevent SSR hydration mismatch
-
   return (
-    <div className={`${uiFont.className} relative w-screen h-screen overflow-hidden ${timeOfDayBackgrounds[effectiveTimeOfDay]} selection:bg-white/20`}>
+    <div className={`${uiFont.className} relative w-full h-dvh overflow-hidden ${timeOfDayBackgrounds[effectiveTimeOfDay]} selection:bg-white/20 ${shouldReduceMotion ? 'motion-reduce' : ''}`}>
 
       {/* Global CSS for Wave Animations */}
       <style dangerouslySetInnerHTML={{
@@ -835,21 +854,37 @@ export default function MessageInABottle() {
         .wave-slow { animation: pan-left 35s linear infinite; }
         .wave-mid { animation: pan-right 25s linear infinite; }
         .wave-fast { animation: pan-left 15s linear infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .wave-slow, .wave-mid, .wave-fast {
+            animation: none !important;
+          }
+        }
+        .motion-reduce .wave-slow,
+        .motion-reduce .wave-mid,
+        .motion-reduce .wave-fast {
+          animation: none !important;
+        }
       `}} />
 
       {/* Header Controls */}
       <header className="absolute top-0 left-0 w-full p-3 sm:p-6 md:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 z-50">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/6 border border-white/15 backdrop-blur-md shadow-lg">
+          <div
+            className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/6 border border-white/15 backdrop-blur-md shadow-lg"
+            aria-label={`${releasedCount} thoughts released`}
+          >
             <RealisticBottleSvg className="w-5 sm:w-6 h-5 sm:h-6" />
             <span className="text-xs sm:text-sm font-medium tracking-wide">
-              <strong className="text-white">{releasedCount}</strong> released
+              <strong className="text-white tabular-nums">{releasedCount}</strong> released
             </span>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/6 border border-white/15 backdrop-blur-md shadow-lg">
+          <div
+            className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/6 border border-white/15 backdrop-blur-md shadow-lg"
+            aria-label={`${gratitudeCount} gratitude stars shared`}
+          >
             <StarIcon className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-300/80" />
             <span className="text-xs sm:text-sm font-medium tracking-wide">
-              <strong className="text-white">{gratitudeCount}</strong> grateful
+              <strong className="text-white tabular-nums">{gratitudeCount}</strong> grateful
             </span>
           </div>
         </div>
@@ -857,25 +892,30 @@ export default function MessageInABottle() {
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
           <button
             onClick={toggleMode}
-            className={`px-3 sm:px-4 py-2 rounded-full border border-white/15 backdrop-blur-md text-[10px] sm:text-xs md:text-sm tracking-wide transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-full border border-white/15 backdrop-blur-md text-[10px] sm:text-xs md:text-sm tracking-wide transition-[background-color,border-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
               mode === 'release'
-                ? 'bg-blue-500/20 text-blue-100 border-blue-300/30'
-                : 'bg-yellow-500/20 text-yellow-100 border-yellow-300/30'
+                ? 'bg-blue-500/20 text-blue-100 border-blue-300/30 focus-visible:ring-blue-400'
+                : 'bg-yellow-500/20 text-yellow-100 border-yellow-300/30 focus-visible:ring-yellow-400'
             }`}
           >
             {mode === 'release' ? '🌊 Release' : '⭐ Grateful'}
           </button>
 
-          <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/6 px-1 py-1 text-[8px] sm:text-[10px] md:text-xs tracking-wide text-white/75">
+          <div
+            className="flex items-center gap-1 rounded-full border border-white/15 bg-white/6 px-1 py-1 text-[8px] sm:text-[10px] md:text-xs tracking-wide text-white/75"
+            role="region"
+            aria-label="Select theme background"
+          >
             {(['auto', 'day', 'dusk', 'night'] as TimeOfDayPreview[]).map(option => (
               <button
                 key={option}
                 onClick={() => setTimeOfDayPreview(option)}
-                className={`px-1.5 sm:px-2 py-1 rounded-full transition-colors text-[8px] sm:text-[10px] ${timeOfDayPreview === option
+                className={`px-1.5 sm:px-2 py-1 rounded-full transition-colors text-[8px] sm:text-[10px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white ${timeOfDayPreview === option
                   ? 'bg-white/20 text-white'
                   : 'text-white/70 hover:text-white'
                 }`}
                 aria-pressed={timeOfDayPreview === option}
+                aria-label={`${option === 'auto' ? 'Automatic time theme' : option.charAt(0).toUpperCase() + option.slice(1) + ' theme'}`}
               >
                 {option === 'auto' ? 'A' : option.charAt(0).toUpperCase()}
               </button>
@@ -884,7 +924,7 @@ export default function MessageInABottle() {
 
           <button
             onClick={() => setIsHistoryOpen(prev => !prev)}
-            className="px-3 sm:px-4 py-2 rounded-full border border-white/15 bg-white/6 text-[10px] sm:text-xs md:text-sm tracking-wide text-white/75 hover:text-white transition-colors"
+            className="px-3 sm:px-4 py-2 rounded-full border border-white/15 bg-white/6 text-[10px] sm:text-xs md:text-sm tracking-wide text-white/75 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             aria-expanded={isHistoryOpen}
           >
             History
@@ -892,7 +932,7 @@ export default function MessageInABottle() {
 
           <button
             onClick={() => setShowEventsPanel(prev => !prev)}
-            className="px-3 sm:px-4 py-2 rounded-full border border-white/15 bg-white/6 text-[10px] sm:text-xs md:text-sm tracking-wide text-white/75 hover:text-white transition-colors"
+            className="px-3 sm:px-4 py-2 rounded-full border border-white/15 bg-white/6 text-[10px] sm:text-xs md:text-sm tracking-wide text-white/75 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             aria-expanded={showEventsPanel}
           >
             Events
@@ -901,7 +941,7 @@ export default function MessageInABottle() {
           <div className="relative">
             <button
               onClick={toggleAudio}
-              className="p-2 sm:p-3 rounded-full bg-white/6 border border-white/15 backdrop-blur-md hover:bg-white/10 transition-colors shadow-lg"
+              className="p-2 sm:p-3 rounded-full bg-white/6 border border-white/15 backdrop-blur-md hover:bg-white/10 transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               aria-label="Toggle ambient sound"
             >
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -916,12 +956,14 @@ export default function MessageInABottle() {
       </header>
 
       {/* Main Interactive Area */}
-      <main className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 md:p-8 z-40 pt-24 sm:pt-20 md:pt-16">
+      <main id="main-content" className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 md:p-8 z-40 pt-24 sm:pt-20 md:pt-16">
+        <h1 className="sr-only">Noverthink — Message in a Bottle</h1>
         <AnimatePresence>
           {(stage === 'typing' || stage === 'crystallizing') && (
             <motion.div
               key="typing-card"
               variants={cardVariants}
+              custom={shouldReduceMotion}
               initial="hidden"
               animate="typing"
               exit="exit"
@@ -930,12 +972,15 @@ export default function MessageInABottle() {
               <motion.textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                name="journal-entry"
+                autoComplete="off"
+                aria-label={mode === 'release' ? "Thoughts to release" : "Gratitude journal entry"}
                 placeholder={
                   mode === 'release'
-                    ? "What is weighing on your mind? Pour it out..."
-                    : "What are you grateful for? Let it shine..."
+                    ? "What is weighing on your mind? Pour it out…"
+                    : "What are you grateful for? Let it shine…"
                 }
-                className="w-full min-h-[120px] sm:min-h-[160px] max-h-[40vh] sm:max-h-[30vh] bg-transparent text-base sm:text-lg md:text-xl leading-relaxed tracking-wide placeholder:text-white/30 resize-none outline-none overflow-y-auto"
+                className="w-full min-h-[120px] sm:min-h-[160px] max-h-[40vh] sm:max-h-[30vh] bg-transparent text-base sm:text-lg md:text-xl font-medium md:font-semibold leading-relaxed tracking-wide placeholder:text-white/30 resize-none outline-none focus-visible:ring-2 focus-visible:ring-white/15 rounded-xl px-2 py-1 overflow-y-auto"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 variants={textVariants}
                 initial="messy"
@@ -948,13 +993,13 @@ export default function MessageInABottle() {
                 <div className="flex flex-wrap gap-2 pt-2 sm:pt-3 border-t border-white/10">
                   <button
                     onClick={getRandomPrompt}
-                    className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
+                    className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900"
                   >
                     Need a prompt?
                   </button>
                   <button
                     onClick={toggleEmotionWheel}
-                    className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
+                    className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900"
                   >
                     How am I feeling?
                   </button>
@@ -982,11 +1027,11 @@ export default function MessageInABottle() {
             <button
               onClick={handleRelease}
               disabled={text.trim().length === 0 || stage !== 'typing'}
-              className={`group flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 sm:py-3 transition-all duration-300 backdrop-blur-md text-xs sm:text-sm
+              className={`group flex items-center gap-2 sm:gap-3 rounded-full border px-4 sm:px-5 py-2 sm:py-3 transition-[color,background-color,border-color,box-shadow,transform] duration-300 backdrop-blur-md text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
                 ${text.trim().length > 0
                   ? mode === 'release'
-                    ? 'bg-blue-500/20 hover:bg-blue-500/30 text-white border-blue-300/30 shadow-[0_0_30px_rgba(96,165,250,0.15)] cursor-pointer hover:scale-[1.02]'
-                    : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-white border-yellow-300/30 shadow-[0_0_30px_rgba(253,224,71,0.15)] cursor-pointer hover:scale-[1.02]'
+                    ? 'bg-blue-500/20 hover:bg-blue-500/30 text-white border-blue-300/30 shadow-[0_0_30px_rgba(96,165,250,0.15)] cursor-pointer hover:scale-[1.02] focus-visible:ring-blue-400'
+                    : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-white border-yellow-300/30 shadow-[0_0_30px_rgba(253,224,71,0.15)] cursor-pointer hover:scale-[1.02] focus-visible:ring-yellow-400'
                   : 'bg-white/5 text-white/30 border-white/10 cursor-not-allowed'
                 }`}
               aria-label={mode === 'release' ? 'Release to the Ocean' : 'Send to the Stars'}
@@ -1056,6 +1101,8 @@ export default function MessageInABottle() {
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.4, ease: easeInOut }}
                     className={`${breathFont.className} absolute -translate-y-32 sm:-translate-y-40 md:-translate-y-48 text-sm sm:text-base md:text-lg font-medium tracking-[0.16em] text-sky-100/85`}
+                    aria-live="polite"
+                    role="status"
                   >
                     {breathCopy[breathPhase]}
                   </motion.p>
@@ -1092,6 +1139,8 @@ export default function MessageInABottle() {
               exit={{ opacity: 0 }}
               transition={{ duration: 3, ease: easeInOut, times: [0, 0.35, 1] }}
               className="absolute inset-0 flex items-center justify-center text-center px-4 sm:px-6 pointer-events-none"
+              aria-live="polite"
+              role="status"
             >
               <p className={`${breathFont.className} text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light tracking-wide text-white/90`}>
                 {affirmation}
@@ -1106,6 +1155,7 @@ export default function MessageInABottle() {
             <motion.div
               key="releasing-bottle"
               variants={bottleVariants}
+              custom={shouldReduceMotion}
               initial="hidden"
               animate={stage}
               exit="exit"
@@ -1123,8 +1173,8 @@ export default function MessageInABottle() {
                   ? { opacity: 1, scale: 1, y: '0vh', transition: { duration: 1, ease: easeOut } }
                   : {
                       opacity: [1, 1, 0.8, 0],
-                      scale: [1, 0.8, 0.6, 0.3],
-                      y: ['0vh', '-15vh', '-35vh', '-55vh'],
+                      scale: shouldReduceMotion ? [1, 0.9, 0.8, 0.7] : [1, 0.8, 0.6, 0.3],
+                      y: shouldReduceMotion ? ['0vh', '-10vh', '-20vh', '-30vh'] : ['0vh', '-15vh', '-35vh', '-55vh'],
                       transition: { duration: releaseDurationSec, ease: easeInOut }
                     }
               }
@@ -1153,14 +1203,17 @@ export default function MessageInABottle() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reflection-title"
               className="w-full max-w-md p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl"
             >
-              <p className={`${breathFont.className} text-lg sm:text-xl md:text-2xl text-white/90 leading-relaxed mb-4 sm:mb-6`}>
+              <p id="reflection-title" className={`${breathFont.className} text-lg sm:text-xl md:text-2xl text-white/90 leading-relaxed mb-4 sm:mb-6`}>
                 {currentPrompt}
               </p>
               <button
                 onClick={() => setShowReflectionPrompt(false)}
-                className="w-full px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm text-white transition-colors"
+                className="w-full px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               >
                 Close
               </button>
@@ -1185,9 +1238,12 @@ export default function MessageInABottle() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="emotion-title"
               className="w-full max-w-lg max-h-[70vh] overflow-y-auto p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl"
             >
-              <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4 text-center">What are you feeling?</h3>
+              <h3 id="emotion-title" className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4 text-center">What are you feeling?</h3>
               <div className="space-y-3 sm:space-y-4">
                 {Object.entries(emotionWheel).map(([category, emotions]) => (
                   <div key={category} className="rounded-lg sm:rounded-xl bg-white/5 border border-white/10 p-3 sm:p-4">
@@ -1200,7 +1256,7 @@ export default function MessageInABottle() {
                             setText(prev => prev + (prev ? ' ' : '') + emotion.toLowerCase());
                             toggleEmotionWheel();
                           }}
-                          className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white transition-colors"
+                          className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900"
                         >
                           {emotion}
                         </button>
@@ -1211,7 +1267,7 @@ export default function MessageInABottle() {
               </div>
               <button
                 onClick={toggleEmotionWheel}
-                className="w-full mt-3 sm:mt-4 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm text-white transition-colors"
+                className="w-full mt-3 sm:mt-4 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               >
                 Close
               </button>
@@ -1234,10 +1290,13 @@ export default function MessageInABottle() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="prerelease-title"
               className="w-full max-w-md p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-white/10 border border-white/20 backdrop-blur-xl shadow-2xl"
             >
-              <p className={`${breathFont.className} text-lg sm:text-xl md:text-2xl text-white/90 leading-relaxed mb-4 sm:mb-6 text-center`}>
-                Before you release...
+              <p id="prerelease-title" className={`${breathFont.className} text-lg sm:text-xl md:text-2xl text-white/90 leading-relaxed mb-4 sm:mb-6 text-center`}>
+                Before you release…
                 <br />
                 <span className="text-base sm:text-lg text-white/70 mt-2 block">
                   What do you need right now?
@@ -1246,13 +1305,13 @@ export default function MessageInABottle() {
               <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowPreReleasePrompt(false)}
-                  className="flex-1 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-xs sm:text-sm text-white/70 hover:text-white transition-colors"
+                  className="flex-1 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-xs sm:text-sm text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900"
                 >
                   Keep writing
                 </button>
                 <button
                   onClick={confirmRelease}
-                  className="flex-1 px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-xs sm:text-sm text-white transition-colors"
+                  className="flex-1 px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-xs sm:text-sm text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-900"
                 >
                   Release it
                 </button>
@@ -1271,13 +1330,16 @@ export default function MessageInABottle() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: easeInOut }}
+            role="region"
+            aria-label="Seasonal Events Panel"
             className="absolute right-4 sm:right-6 top-20 sm:top-24 w-[calc(100vw-2rem)] sm:w-[82vw] md:max-w-xs overflow-hidden rounded-xl sm:rounded-2xl border border-white/15 bg-[#0b1326]/95 backdrop-blur-xl shadow-2xl z-50"
           >
             <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-white/10">
               <span className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-white/70">Seasonal Events</span>
               <button
                 onClick={() => setShowEventsPanel(false)}
-                className="text-[10px] sm:text-xs text-white/60 hover:text-white"
+                className="text-[10px] sm:text-xs text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] p-1 rounded"
+                aria-label="Close events panel"
               >
                 ✕
               </button>
@@ -1287,30 +1349,30 @@ export default function MessageInABottle() {
                 <p className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">Celestial</p>
                 <button
                   onClick={() => toggleEvent('fullMoon')}
-                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] ${
                     manualOverrides.fullMoon
-                      ? 'bg-yellow-500/20 text-yellow-100 border border-yellow-300/30'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                      ? 'bg-yellow-500/20 text-yellow-100 border border-yellow-300/30 focus-visible:ring-yellow-400'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 focus-visible:ring-white/40'
                   }`}
                 >
                   🌕 Full Moon
                 </button>
                 <button
                   onClick={() => toggleEvent('meteorShower')}
-                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] ${
                     manualOverrides.meteorShower
-                      ? 'bg-blue-500/20 text-blue-100 border border-blue-300/30'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                      ? 'bg-blue-500/20 text-blue-100 border border-blue-300/30 focus-visible:ring-blue-400'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 focus-visible:ring-white/40'
                   }`}
                 >
                   ☄️ Meteor Shower
                 </button>
                 <button
                   onClick={() => toggleEvent('aurora')}
-                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors ${
+                  className={`w-full px-3 py-2 rounded-lg text-xs sm:text-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] ${
                     manualOverrides.aurora
-                      ? 'bg-green-500/20 text-green-100 border border-green-300/30'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                      ? 'bg-green-500/20 text-green-100 border border-green-300/30 focus-visible:ring-green-400'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 focus-visible:ring-white/40'
                   }`}
                 >
                   🌌 Aurora Borealis
@@ -1320,7 +1382,7 @@ export default function MessageInABottle() {
 
               <button
                 onClick={resetOverrides}
-                className="w-full mt-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] sm:text-xs text-white/70 hover:text-white transition-colors"
+                className="w-full mt-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] sm:text-xs text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326]"
               >
                 Reset to Auto
               </button>
@@ -1341,6 +1403,8 @@ export default function MessageInABottle() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: easeInOut }}
+            role="region"
+            aria-label="Thoughts Release History Panel"
             className="absolute right-4 sm:right-6 top-20 sm:top-24 w-[calc(100vw-2rem)] sm:w-[82vw] md:max-w-xs max-h-[50vh] sm:max-h-[35vh] overflow-hidden rounded-xl sm:rounded-2xl border border-white/15 bg-[#0b1326]/80 backdrop-blur-xl shadow-2xl z-50"
           >
             <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-white/10 gap-2">
@@ -1348,20 +1412,21 @@ export default function MessageInABottle() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={toggleSaveHistory}
-                  className={`text-[10px] sm:text-xs transition-colors ${saveHistory ? 'text-white' : 'text-white/60 hover:text-white'}`}
+                  className={`text-[10px] sm:text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white p-0.5 rounded ${saveHistory ? 'text-white' : 'text-white/60 hover:text-white'}`}
                   aria-pressed={saveHistory}
                 >
                   {saveHistory ? 'On' : 'Off'}
                 </button>
                 <button
                   onClick={handleClearHistory}
-                  className="text-[10px] sm:text-xs text-white/60 hover:text-white"
+                  className="text-[10px] sm:text-xs text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white p-0.5 rounded"
                 >
                   Clear
                 </button>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
-                  className="text-[10px] sm:text-xs text-white/60 hover:text-white"
+                  className="text-[10px] sm:text-xs text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0b1326] p-1 rounded"
+                  aria-label="Close history panel"
                 >
                   ✕
                 </button>
@@ -1383,7 +1448,7 @@ export default function MessageInABottle() {
                       ) : (
                         <span className="text-blue-300/70 text-xs sm:text-sm flex-shrink-0">🌊</span>
                       )}
-                      <p className="text-xs sm:text-sm text-white/85 leading-relaxed flex-1 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-white/85 leading-relaxed flex-1 line-clamp-2 break-words break-all">
                         {entry.text}
                       </p>
                     </div>
@@ -1588,14 +1653,15 @@ export default function MessageInABottle() {
       {/* Gratitude Stars in the Sky */}
       <div className="absolute inset-0 pointer-events-none z-5 overflow-hidden">
         {stars.map((star, index) => (
-          <motion.div
+          <motion.button
             key={star.id}
+            type="button"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: [0, 1, 0.7], scale: [0, 1.2, 1] }}
             transition={{ duration: 1.5, delay: star.delay }}
-            className="absolute group cursor-pointer"
+            className="absolute group pointer-events-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-full"
             style={{ left: `${star.x}%`, top: `${star.y}%` }}
-            title={star.text}
+            aria-label={`Gratitude star: ${star.text}`}
           >
             <motion.div
               animate={{
@@ -1608,12 +1674,12 @@ export default function MessageInABottle() {
                 ease: "easeInOut"
               }}
             >
-              <StarIcon className="w-2 sm:w-3 md:w-4 h-2 sm:h-3 md:h-4 text-yellow-200/60 drop-shadow-[0_0_8px_rgba(253,224,71,0.4)]" />
+              <StarIcon className="w-2 sm:w-3 md:w-4 h-2 sm:h-3 md:h-4 text-yellow-200/60 drop-shadow-[0_0_8px_rgba(253,224,71,0.4)]" aria-hidden="true" />
             </motion.div>
-            <div className="absolute left-1/2 -translate-x-1/2 top-4 sm:top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 text-white text-[10px] sm:text-xs px-2 py-1 rounded whitespace-nowrap max-w-[150px] sm:max-w-[200px] truncate pointer-events-none">
+            <div className="absolute left-1/2 -translate-x-1/2 top-4 sm:top-6 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity bg-black/85 text-white text-[10px] sm:text-xs px-2 py-1 rounded whitespace-normal break-words w-40 pointer-events-none border border-white/10 shadow-lg text-center z-50">
               {star.text}
             </div>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
 

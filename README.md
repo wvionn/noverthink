@@ -29,7 +29,6 @@ A calming web app for emotional release and gratitude. Write your thoughts, rele
 ### 🌙 Celestial Events
 - **Full Moon** - Appears during actual full moon phases
 - **Meteor Showers** - Real dates (Aug 10-14, Dec 13-14, Jan 3-4)
-- **Aurora Borealis** - Toggle manually for beautiful northern lights
 - **Bioluminescent Plankton** - Glowing particles at night
 
 ### 🎨 Dynamic Atmosphere
@@ -47,8 +46,8 @@ A calming web app for emotional release and gratitude. Write your thoughts, rele
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/message-in-a-bottle.git
-   cd message-in-a-bottle
+   git clone https://github.com/wvionn/noverthink.git
+   cd noverthink
    ```
 
 2. **Install dependencies**
@@ -70,7 +69,7 @@ A calming web app for emotional release and gratitude. Write your thoughts, rele
 
 ### One-Click Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/message-in-a-bottle)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/wvionn/noverthink.git)
 
 ### Manual Deploy
 
@@ -121,7 +120,6 @@ NEXT_PUBLIC_LON=106.8456
 2. Toggle celestial events:
    - 🌕 Full Moon
    - ☄️ Meteor Shower
-   - 🌌 Aurora Borealis
 3. Set time to "Night" to see them
 
 ### Control Audio
