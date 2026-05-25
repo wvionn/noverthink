@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import { motion, AnimatePresence, Variants, easeInOut, easeOut, useReducedMotion } from 'framer-motion';
-
+import OceanBackground from './components/OceanBackground';
 // --- Types ---
 type AnimationStage = 'typing' | 'crystallizing' | 'morphing' | 'releasing' | 'complete' | 'affirmation';
 type BreathPhase = 'in' | 'hold' | 'out';
@@ -424,10 +424,27 @@ const MeteorSvg = ({ className = "w-32 h-32" }) => (
 export default function MessageInABottle() {
   const [text, setText] = useState<string>('');
   const [stage, setStage] = useState<AnimationStage>('typing');
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [releasedCount, setReleasedCount] = useState<number>(0);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [affirmation, setAffirmation] = useState<string>('');
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    // Avoid calculations if reduced motion
+    const x = (e.clientX / window.innerWidth) * 2 - 1;
+    const y = -(e.clientY / window.innerHeight) * 2 + 1;
+    setMousePos({ x, y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const x = (touch.clientX / window.innerWidth) * 2 - 1;
+      const y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      setMousePos({ x, y });
+    }
+  };
   const [breathPhase, setBreathPhase] = useState<BreathPhase | null>(null);
   const [showSoundHint, setShowSoundHint] = useState<boolean>(false);
   const [saveHistory, setSaveHistory] = useState<boolean>(false);
@@ -833,14 +850,34 @@ export default function MessageInABottle() {
     });
   };
 
-  return (
-    <div className={`${uiFont.className} relative w-full h-dvh overflow-hidden ${timeOfDayBackgrounds[effectiveTimeOfDay]} selection:bg-white/20 ${shouldReduceMotion ? 'motion-reduce' : ''}`}>
+  const isStormy = stage === 'releasing';
+  const floatY = isStormy ? [0, -18, 0, 18, 0] : [0, -6, 0, 6, 0];
+  const floatRotate = isStormy ? [0, -3, 2, -2, 0] : [0, -0.5, 0.4, -0.4, 0];
+  const floatDuration = isStormy ? 2.5 : 6.0;
 
-      {/* Global CSS for Wave Animations */}
+  const skyFogColors: Record<TimeOfDay, string> = {
+    day: '#314d66',
+    dusk: '#f08a4b',
+    night: '#050812'
+  };
+
+  return (
+    <div 
+      onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
+      className={`${uiFont.className} relative w-full h-dvh overflow-hidden ${timeOfDayBackgrounds[effectiveTimeOfDay]} selection:bg-white/20 ${shouldReduceMotion ? 'motion-reduce' : ''}`}
+    >
+
+      {/* Global CSS for Wave and Caustic Animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes pan-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes pan-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        @keyframes caustic-flow {
+          0% { background-position: 0% 0%; }
+          50% { background-position: 100% 100%; }
+          100% { background-position: 0% 0%; }
+        }
         .wave-layer { width: 200%; height: 100%; position: absolute; bottom: 0; left: 0; }
         .wave-slow { animation: pan-left 35s linear infinite; }
         .wave-mid { animation: pan-right 25s linear infinite; }
@@ -958,8 +995,42 @@ export default function MessageInABottle() {
               initial="hidden"
               animate="typing"
               exit="exit"
-              className="w-full max-w-lg p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col gap-4 sm:gap-6 relative"
+              className="w-full max-w-lg p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col gap-4 sm:gap-6 relative animate-card"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(2, 6, 23, 0.45) 100%)'
+              }}
             >
+              {/* Water Caustics Refraction Overlay */}
+              {!shouldReduceMotion && (
+                <div 
+                  className="absolute inset-0 rounded-2xl sm:rounded-3xl opacity-[0.06] pointer-events-none mix-blend-overlay"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle at 20% 30%, #e0f2fe 0%, transparent 50%), radial-gradient(circle at 80% 70%, #38bdf8 0%, transparent 60%)',
+                    backgroundSize: '200% 200%',
+                    animation: 'caustic-flow 12s ease-in-out infinite'
+                  }}
+                />
+              )}
+
+              {/* Faint glowing anchor line grounding the card into the depths */}
+              <div className="absolute top-[100%] left-1/2 -translate-x-1/2 w-0.5 h-[25vh] pointer-events-none z-10">
+                <div 
+                  className="w-full h-full"
+                  style={{
+                    background: 'linear-gradient(to bottom, rgba(56, 189, 248, 0.4) 0%, rgba(14, 165, 233, 0.12) 50%, transparent 100%)',
+                    boxShadow: '0 0 8px rgba(56, 189, 248, 0.15)'
+                  }}
+                />
+                {!shouldReduceMotion && (
+                  <motion.div 
+                    animate={{ y: [0, 80, 0], opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-sky-300"
+                    style={{ filter: 'blur(1px)' }}
+                  />
+                )}
+              </div>
+
               <motion.textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -1014,7 +1085,7 @@ export default function MessageInABottle() {
         </AnimatePresence>
 
         {(stage === 'typing' || stage === 'crystallizing') && (
-          <div className="absolute inset-x-0 bottom-[20vh] sm:bottom-[18vh] flex justify-center px-4">
+          <div className="absolute inset-x-0 bottom-[20vh] sm:bottom-[18vh] flex justify-center px-4 z-40">
             <button
               onClick={handleRelease}
               disabled={text.trim().length === 0 || stage !== 'typing'}
@@ -1598,32 +1669,7 @@ export default function MessageInABottle() {
       )}
 
       {/* Ambient Ocean Waves (Bottom) with Seasonal Variations */}
-      <div className="absolute bottom-0 left-0 w-full h-[30vh] pointer-events-none z-10 overflow-hidden text-blue-300/15">
-
-        {/* Back Wave (Slow) */}
-        <div className="wave-layer wave-slow text-[#0a192f]/45 mix-blend-screen">
-          <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
-            <path d="M0,60 C300,120 300,0 600,60 C900,120 900,0 1200,60 C1500,120 1500,0 1800,60 C2100,120 2100,0 2400,60 L2400,120 L0,120 Z" />
-          </svg>
-        </div>
-
-        {/* Middle Wave (Medium, Reverse) */}
-        <div className="wave-layer wave-mid text-indigo-900/25 mix-blend-screen">
-          <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
-            <path d="M0,80 C300,20 300,140 600,80 C900,20 900,140 1200,80 C1500,20 1500,140 1800,80 C2100,20 2100,140 2400,80 L2400,120 L0,120 Z" />
-          </svg>
-        </div>
-
-        {/* Front Wave (Fast) */}
-        <div className="wave-layer wave-fast text-blue-800/20 mix-blend-screen">
-          <svg viewBox="0 0 2400 120" preserveAspectRatio="none" className="w-full h-full fill-current">
-            <path d="M0,100 C300,40 300,160 600,100 C900,40 900,160 1200,100 C1500,40 1500,160 1800,100 C2100,40 2100,160 2400,100 L2400,120 L0,120 Z" />
-          </svg>
-        </div>
-
-        {/* Ambient Fog/Gradient at the absolute bottom to blend the SVG edges */}
-        <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#020c1b] to-transparent z-20" />
-      </div>
+      <OceanBackground stage={stage} timeOfDay={effectiveTimeOfDay} mousePos={mousePos} fogColor={skyFogColors[effectiveTimeOfDay]} />
 
     </div>
   );
