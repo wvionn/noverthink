@@ -771,6 +771,19 @@ export default function MessageInABottle() {
   const handleRelease = () => {
     if (text.trim().length > 0 && stage === 'typing') {
       setShowPreReleasePrompt(true);
+      
+      // Auto-play audio immediately when user clicks the initial Release button
+      if (audioRef.current && !isPlaying) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            localStorage.setItem('soundEnabled', 'true');
+            console.log('Audio started playing on handleRelease');
+          })
+          .catch(e => {
+            console.error("Audio play failed:", e);
+          });
+      }
     }
   };
 
@@ -778,22 +791,17 @@ export default function MessageInABottle() {
     setShowPreReleasePrompt(false);
     setStage('crystallizing');
     
-    // Auto-play audio when releasing a message
-    if (audioRef.current) {
-      if (!isPlaying) {
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            localStorage.setItem('soundEnabled', 'true');
-            console.log('Audio started playing');
-          })
-          .catch(e => {
-            console.error("Audio play failed:", e);
-            // If autoplay fails, user can manually click the button
-          });
-      }
-    } else {
-      console.error('Audio ref is null');
+    // Redundant check in case audio play failed initially or was paused
+    if (audioRef.current && !isPlaying) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          localStorage.setItem('soundEnabled', 'true');
+          console.log('Audio started playing on confirmRelease');
+        })
+        .catch(e => {
+          console.error("Audio play failed:", e);
+        });
     }
   };
 
